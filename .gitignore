@@ -1,0 +1,16 @@
+# Python sanal ortamı
+venv/
+.venv/
+
+# Python cache
+*.pyc
+__pycache__/
+
+# Geliştirme veritabanı
+*.sqlite3
+
+# Gizli bilgiler
+.env
+
+# Log dosyaları
+*.log
