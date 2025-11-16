@@ -1,22 +1,22 @@
 from rest_framework import serializers
-from .models import Product, Favorite  # models.py dosyamızdan Product modelini alıyoruz
-from django.contrib.auth.models import User
+# 'Favorite' modelini de import listesine ekle
+from .models import Product, Category, Favorite 
+from django.contrib.auth.models import User 
 
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ['id', 'name','slug', 'description', 'price','image','category']
+        # 'slug' ve 'category' alanlarını React'e göndermek için ekliyoruz
+        fields = ['id', 'name', 'slug', 'description', 'price', 'image', 'category']
+
 class UserSerializer(serializers.ModelSerializer):
-    # 'write_only=True' şifrenin API'den geri okunmasını (GET) engeller
     password = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
-        # Kayıt olurken hangi alanları isteyeceğimizi belirtir
         fields = ('username', 'password', 'email', 'first_name', 'last_name')
 
     def create(self, validated_data):
-        # 'create' metodunu eziyoruz ki şifreyi şifreleyerek (hash) kaydedebilelim
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data.get('email', ''),
@@ -26,14 +26,23 @@ class UserSerializer(serializers.ModelSerializer):
         )
         return user
 
+# === GÜNCELLENMİŞ FAVORİ SERIALIZER BÖLÜMÜ ===
+
+# YENİ: Bu, favorileri OKURKEN kullanılacak (GET)
+# (İç içe ProductSerializer kullanarak tam ürün bilgisini verir)
 class FavoriteReadSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.username')
-    product = ProductSerializer(read_only=True) # <-- DEĞİŞİKLİK BURADA
+    # ProductSerializer'ı burada iç içe kullanarak
+    # sadece ID'yi değil, tüm ürün objesini gönderiyoruz.
+    product = ProductSerializer(read_only=True) 
 
     class Meta:
         model = Favorite
         fields = ['id', 'user', 'product', 'created_at']
+
+# YENİ: Bu, favori OLUŞTURURKEN kullanılacak (POST)
+# (Sadece ürünün ID'sini alır)
 class FavoriteWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Favorite
-        fields = ['product']
+        fields = ['product'] # Sadece 'product' ID'sini alır (user otomatiktir)
