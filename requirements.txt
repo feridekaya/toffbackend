@@ -1,0 +1,11 @@
+# Backend için gerekli paketler
+Django==4.2.7
+djangorestframework==3.14.0
+django-cors-headers==4.3.0
+Pillow==10.1.0
+djangorestframework-simplejwt==5.3.0
+iyzipay==1.0.45
+gunicorn==21.2.0
+psycopg2-binary==2.9.9
+whitenoise==6.6.0
+python-decouple==3.8
