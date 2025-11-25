@@ -272,3 +272,5 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     )
 }
+# Railway gibi proxy arkasında çalışırken HTTPS olduğunu anlaması için:
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
