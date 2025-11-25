@@ -127,20 +127,6 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
-
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
-
-# MEDYA (YÜKLENEN DOSYALAR) AYARLARI
-
-# 1. Django'nun tarayıcıya resimleri hangi URL'den sunacağı.
-# Örn: http://.../media/products/resim.jpg
-MEDIA_URL = '/media/'
-
 # 2. Yüklenen resimlerin bilgisayarımızda fiziksel olarak nereye kaydedileceği.
 # (Proje ana klasörümüzün (backend) içinde 'media' adında bir klasör oluşturacak)
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
