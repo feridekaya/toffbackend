@@ -134,11 +134,12 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
+CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,https://tofffrontend-production.up.railway.app').split(',')
 
 # CSRF Güvenlik Ayarları
 CSRF_TRUSTED_ORIGINS = [
     'https://web-production-4a117.up.railway.app',
+    'https://tofffrontend-production.up.railway.app',
     'http://localhost:3000',
 ]
 
