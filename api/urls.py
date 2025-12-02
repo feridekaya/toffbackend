@@ -7,6 +7,7 @@ from .views import UserCreateView
 # Router oluştur
 router = DefaultRouter()
 router.register(r'products', views.ProductViewSet, basename='product')
+router.register(r'categories', views.CategoryViewSet, basename='category')
 router.register(r'collections', views.CollectionViewSet, basename='collection')
 router.register(r'favorites', views.FavoriteViewSet, basename='favorite')
 router.register(r'addresses', views.AddressViewSet, basename='address')

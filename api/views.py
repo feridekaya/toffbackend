@@ -11,7 +11,7 @@ from .models import Product, Category, Collection, Favorite, Address, Coupon, Or
 from .serializers import (
     ProductSerializer, CollectionSerializer, UserSerializer, 
     FavoriteReadSerializer, FavoriteWriteSerializer, 
-    ChangePasswordSerializer, AddressSerializer, CouponSerializer
+    ChangePasswordSerializer, AddressSerializer, CouponSerializer, CategorySerializer
 )
 from . import iyzico_service
 
@@ -78,6 +78,13 @@ class ProductViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(name__icontains=search_query)
             
         return queryset
+
+
+# --- Kategoriler ViewSet ---
+class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Category.objects.all().order_by('name')
+    serializer_class = CategorySerializer
+    pagination_class = None  # Kategoriler için sayfalama kapatılabilir veya büyük tutulabilir
 
 
 # --- Koleksiyonlar ViewSet ---
