@@ -11,8 +11,12 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
+from .views import root_view
 
 urlpatterns = [
+    # 0. Root Path
+    path('', root_view, name='root'),
+
     # 1. Admin Paneli
     path('admin/', admin.site.urls),
     
