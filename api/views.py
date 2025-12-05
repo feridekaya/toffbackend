@@ -9,7 +9,7 @@ from django.db import transaction
 
 from .models import Product, Category, Collection, Favorite, Address, Coupon, Order, OrderItem
 from .serializers import (
-    ProductSerializer, CollectionSerializer, UserSerializer, 
+    ProductSerializer, CollectionSerializer, UserSerializer, RegisterSerializer,
     FavoriteReadSerializer, FavoriteWriteSerializer, 
     ChangePasswordSerializer, AddressSerializer, CouponSerializer, CategorySerializer
 )
@@ -121,7 +121,7 @@ class CollectionViewSet(viewsets.ReadOnlyModelViewSet):
 # --- Kayıt Olma View'ı ---
 class UserCreateView(generics.CreateAPIView):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
