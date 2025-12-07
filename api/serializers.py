@@ -152,10 +152,10 @@ class AddressSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('user', 'created_at')
         extra_kwargs = {
-            'tc_id': {'required': False, 'allow_blank': True},
-            'corporate_name': {'required': False, 'allow_blank': True},
-            'tax_office': {'required': False, 'allow_blank': True},
-            'tax_number': {'required': False, 'allow_blank': True},
+            'tc_id': {'required': False, 'allow_blank': True, 'allow_null': True},
+            'corporate_name': {'required': False, 'allow_blank': True, 'allow_null': True},
+            'tax_office': {'required': False, 'allow_blank': True, 'allow_null': True},
+            'tax_number': {'required': False, 'allow_blank': True, 'allow_null': True},
         }
 
 # --- KUPONLAR İÇİN ---
