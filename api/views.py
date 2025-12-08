@@ -347,3 +347,105 @@ def create_order(request):
             'error': 'Sipariş oluşturulurken bir hata oluştu.',
             'detail': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# --- Sepet ViewSet ---
+from .models import Cart, CartItem, ProductSize, ProductColor
+from .serializers import CartSerializer, CartItemSerializer
+
+class CartViewSet(viewsets.ModelViewSet):
+    """
+    Kullanıcının sepetini yönetir.
+    GET /api/cart/ -> Sepeti getirir (yoksa oluşturur)
+    POST /api/cart/add_item/ -> Ürün ekler
+    POST /api/cart/remove_item/ -> Ürün siler
+    POST /api/cart/update_quantity/ -> Miktar günceller
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = CartSerializer
+
+    def get_queryset(self):
+        return Cart.objects.filter(user=self.request.user)
+
+    def list(self, request, *args, **kwargs):
+        cart, created = Cart.objects.get_or_create(user=request.user)
+        serializer = self.get_serializer(cart)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['post'])
+    def add_item(self, request):
+        cart, created = Cart.objects.get_or_create(user=request.user)
+        
+        product_id = request.data.get('product_id')
+        quantity = int(request.data.get('quantity', 1))
+        size_id = request.data.get('selected_size_id')
+        color_id = request.data.get('selected_color_id')
+
+        if not product_id:
+            return Response({'error': 'Product ID required'}, status=400)
+
+        product = Product.objects.get(id=product_id)
+        
+        # Varyasyonları bul
+        size = None
+        if size_id:
+            size = ProductSize.objects.get(id=size_id)
+            
+        color = None
+        if color_id:
+            color = ProductColor.objects.get(id=color_id)
+
+        # Aynı varyasyona sahip ürün var mı?
+        cart_item, created = CartItem.objects.get_or_create(
+            cart=cart,
+            product=product,
+            selected_size=size,
+            selected_color=color,
+            defaults={'quantity': quantity}
+        )
+
+        if not created:
+            cart_item.quantity += quantity
+            cart_item.save()
+
+        # Güncel sepeti döndür
+        serializer = self.get_serializer(cart)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['post'])
+    def remove_item(self, request):
+        cart, created = Cart.objects.get_or_create(user=request.user)
+        item_id = request.data.get('item_id')
+
+        if not item_id:
+             return Response({'error': 'Item ID required'}, status=400)
+
+        try:
+            item = CartItem.objects.get(id=item_id, cart=cart)
+            item.delete()
+        except CartItem.DoesNotExist:
+            return Response({'error': 'Item not found'}, status=404)
+
+        serializer = self.get_serializer(cart)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['post'])
+    def update_quantity(self, request):
+        cart, created = Cart.objects.get_or_create(user=request.user)
+        item_id = request.data.get('item_id')
+        quantity = int(request.data.get('quantity', 1))
+
+        if not item_id:
+             return Response({'error': 'Item ID required'}, status=400)
+        
+        if quantity < 1:
+            return Response({'error': 'Quantity must be at least 1'}, status=400)
+
+        try:
+            item = CartItem.objects.get(id=item_id, cart=cart)
+            item.quantity = quantity
+            item.save()
+        except CartItem.DoesNotExist:
+            return Response({'error': 'Item not found'}, status=404)
+
+        serializer = self.get_serializer(cart)
+        return Response(serializer.data)

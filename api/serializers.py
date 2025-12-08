@@ -1,6 +1,6 @@
 # C:\Users\kayaf\backend\api\serializers.py
 from rest_framework import serializers
-from .models import Product, Category, Collection, Favorite, Profile, Address, ProductImage, ProductSize, ProductColor, Coupon
+from .models import Product, Category, Collection, Favorite, Profile, Address, ProductImage, ProductSize, ProductColor, Coupon, Cart, CartItem
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password 
 
@@ -161,6 +161,32 @@ class AddressSerializer(serializers.ModelSerializer):
 # --- KUPONLAR İÇİN ---
 
 class CouponSerializer(serializers.ModelSerializer):
-    class Meta:
         model = Coupon
         fields = '__all__'
+
+# --- SEPET İÇİN ---
+
+class CartItemSerializer(serializers.ModelSerializer):
+    product = ProductSerializer(read_only=True)
+    product_id = serializers.PrimaryKeyRelatedField(
+        queryset=Product.objects.all(), source='product', write_only=True
+    )
+    selected_size = ProductSizeSerializer(read_only=True)
+    selected_size_id = serializers.PrimaryKeyRelatedField(
+        queryset=ProductSize.objects.all(), source='selected_size', write_only=True, allow_null=True, required=False
+    )
+    selected_color = ProductColorSerializer(read_only=True)
+    selected_color_id = serializers.PrimaryKeyRelatedField(
+        queryset=ProductColor.objects.all(), source='selected_color', write_only=True, allow_null=True, required=False
+    )
+
+    class Meta:
+        model = CartItem
+        fields = ['id', 'product', 'product_id', 'quantity', 'selected_size', 'selected_size_id', 'selected_color', 'selected_color_id']
+
+class CartSerializer(serializers.ModelSerializer):
+    items = CartItemSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = Cart
+        fields = ['id', 'items', 'updated_at']
