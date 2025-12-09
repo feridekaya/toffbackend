@@ -147,11 +147,16 @@ class Coupon(models.Model):
 
 class Order(models.Model):
     STATUS_CHOICES = (
-        ('pending', 'Beklemede'),
-        ('paid', 'Ödendi'),
+        ('pending_payment', 'Ödeme Bekleniyor'),
+        ('order_confirmed', 'Sipariş Onaylandı'),
+        ('preparing', 'Üretime Hazırlanıyor'),
+        ('metalworks', 'Metal İşçiliği'),
+        ('woodworks', 'Ahşap İşçiliği'),
+        ('finishing', 'Boya & Vernik'),
+        ('quality_control', 'Kalite Kontrol'),
         ('shipped', 'Kargoya Verildi'),
         ('delivered', 'Teslim Edildi'),
-        ('cancelled', 'İptal Edildi'),
+        ('cancelled', 'İptal/İade'),
     )
     
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='orders')
@@ -160,7 +165,7 @@ class Order(models.Model):
     city = models.CharField(max_length=50)
     phone = models.CharField(max_length=15)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending_payment')
     payment_id = models.CharField(max_length=100, blank=True, null=True, help_text="Iyzico ödeme ID")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
