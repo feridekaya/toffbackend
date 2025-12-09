@@ -84,6 +84,7 @@ class ProductViewSet(viewsets.ModelViewSet):
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Category.objects.all().order_by('name')
     serializer_class = CategorySerializer
+    lookup_field = 'slug'
     pagination_class = None  # Kategoriler için sayfalama kapatılabilir veya büyük tutulabilir
 
 

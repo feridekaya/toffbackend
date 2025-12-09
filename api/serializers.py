@@ -111,9 +111,17 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'slug', 'description', 'price', 'image', 'category', 'collection', 'created_at', 'images', 'sizes', 'colors']
 
 class CategorySerializer(serializers.ModelSerializer):
+    header_slug = serializers.SerializerMethodField()
+
     class Meta:
         model = Category
-        fields = ['id', 'name', 'slug', 'parent']
+        fields = ['id', 'name', 'slug', 'parent', 'header_slug']
+
+    def get_header_slug(self, obj):
+        # Eğer bir üst kategori varsa onun slug'ını, yoksa kendininkini döndür
+        if obj.parent:
+            return obj.parent.slug
+        return obj.slug
 
 
 # --- KOLEKSİYONLAR İÇİN ---
