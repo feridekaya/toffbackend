@@ -11,7 +11,8 @@ from .models import Product, Category, Collection, Favorite, Address, Coupon, Or
 from .serializers import (
     ProductSerializer, CollectionSerializer, UserSerializer, RegisterSerializer,
     FavoriteReadSerializer, FavoriteWriteSerializer, 
-    ChangePasswordSerializer, AddressSerializer, CouponSerializer, CategorySerializer
+    ChangePasswordSerializer, AddressSerializer, CouponSerializer, CategorySerializer,
+    OrderSerializer
 )
 from . import iyzico_service
 
@@ -159,6 +160,53 @@ class ChangePasswordView(generics.UpdateAPIView):
 
     def get_object(self, queryset=None):
         return self.request.user
+
+
+# --- SİPARİŞ YÖNETİMİ (ADMIN) ---
+class OrderViewSet(viewsets.ModelViewSet):
+    """
+    Admin sipariş yönetimi için ViewSet.
+    Kullanıcılar sadece kendi siparişlerini görebilir (list/retrieve).
+    Admin (staff) tüm siparişleri görebilir, durumunu değiştirebilir.
+    """
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        # Eğer admin/staff ise tüm siparişler
+        if user.is_staff:
+            return Order.objects.all().order_by('-created_at')
+        # Değilse sadece kendi siparişleri
+        return Order.objects.filter(user=user).order_by('-created_at')
+
+    def perform_create(self, serializer):
+        # API üzerinden sipariş oluşturulursa (genelde create_order view kullanılır ama burası yedek)
+        serializer.save(user=self.request.user)
+
+    @action(detail=True, methods=['patch'])
+    def update_status(self, request, pk=None):
+        """
+        Admin'in sipariş durumunu güncellemesi için endpoint.
+        PATCH /api/orders/{id}/update_status/
+        Body: { "status": "preparing", "tracking_number": "TRK123" }
+        """
+        if not request.user.is_staff:
+            return Response({'error': 'Yetkiniz yok.'}, status=status.HTTP_403_FORBIDDEN)
+        
+        order = self.get_object()
+        new_status = request.data.get('status')
+        tracking_number = request.data.get('tracking_number')
+
+        if new_status:
+            order.status = new_status
+        
+        if tracking_number is not None:
+            order.tracking_number = tracking_number
+
+        order.save()
+        serializer = self.get_serializer(order)
+        return Response(serializer.data)
 
     def update(self, request, *args, **kwargs):
         self.object = self.get_object()
@@ -313,13 +361,21 @@ def create_order(request):
                 phone=phone,
                 total_amount=total_amount,
                 status='paid',
-                payment_id=payment_result.get('payment_id')
+                payment_id=payment_result.get('payment_id'),
+                customer_note=request.data.get('customer_note', '') # Müşteri notunu kaydet
             )
             
             # Sipariş ürünlerini kaydet ve stokları düş
             for item in cart_items:
                 product_id = item.get('product', {}).get('id')
                 quantity = item.get('quantity', 0)
+                
+                # Varyasyon bilgilerini al (Snapshot için)
+                selected_size_obj = item.get('selectedSize') or item.get('selected_size')
+                selected_color_obj = item.get('selectedColor') or item.get('selected_color')
+
+                size_name = selected_size_obj.get('name') if selected_size_obj else None
+                color_name = selected_color_obj.get('name') if selected_color_obj else None
                 
                 product = Product.objects.select_for_update().get(id=product_id)
                 
@@ -329,7 +385,9 @@ def create_order(request):
                     product=product,
                     product_name=product.name,
                     quantity=quantity,
-                    price=product.price
+                    price=product.price,
+                    selected_size=size_name,   # Snapshot
+                    selected_color=color_name  # Snapshot
                 )
                 
                 # Stoktan düş

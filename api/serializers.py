@@ -1,6 +1,6 @@
 # C:\Users\kayaf\backend\api\serializers.py
 from rest_framework import serializers
-from .models import Product, Category, Collection, Favorite, Profile, Address, ProductImage, ProductSize, ProductColor, Coupon, Cart, CartItem
+from .models import Product, Category, Collection, Favorite, Profile, Address, ProductImage, ProductSize, ProductColor, Coupon, Cart, CartItem, Order, OrderItem
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password 
 
@@ -198,3 +198,31 @@ class CartSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cart
         fields = ['id', 'items', 'updated_at']
+
+# --- SİPARİŞLER İÇİN ---
+
+class OrderItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.ReadOnlyField(source='product.name')
+    product_image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OrderItem
+        fields = ['id', 'product', 'product_name', 'product_image', 'quantity', 'price', 'selected_size', 'selected_color']
+
+    def get_product_image(self, obj):
+        if obj.product and obj.product.image:
+            return obj.product.image.url
+        return None
+
+class OrderSerializer(serializers.ModelSerializer):
+    items = OrderItemSerializer(many=True, read_only=True)
+    user_email = serializers.ReadOnlyField(source='user.email')
+
+    class Meta:
+        model = Order
+        fields = [
+            'id', 'user', 'user_email', 'full_name', 'address', 'city', 'phone', 
+            'total_amount', 'status', 'created_at', 'items', 
+            'customer_note', 'tracking_number'
+        ]
+        read_only_fields = ['id', 'user', 'created_at', 'total_amount', 'items']
