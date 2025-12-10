@@ -19,7 +19,10 @@ urlpatterns = [
     path('register/', UserCreateView.as_view(), name='user-register'),
     path('user/', views.UserProfileView.as_view(), name='user-profile'),
     path('change-password/', views.ChangePasswordView.as_view(), name='change-password'),
+    path('auth/forgot-password/', views.ForgotPasswordView.as_view(), name='forgot-password'),
+    path('auth/reset-password-confirm/<uidb64>/<token>/', views.ResetPasswordConfirmView.as_view(), name='reset-password-confirm'),
     path('coupons/validate/', views.validate_coupon, name='validate-coupon'),
     path('orders/create/', views.create_order, name='create-order'),
+    path('contact/', views.ContactView.as_view(), name='contact'),
     path('', include(router.urls)),
 ]

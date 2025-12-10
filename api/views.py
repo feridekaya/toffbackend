@@ -200,6 +200,19 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         if new_status:
             order.status = new_status
+            
+            # DURUM DEĞİŞİKLİĞİ EMAİLİ (Sadece 'shipped' için)
+            if new_status == 'shipped' and order.user and order.user.email:
+                send_toff_email(
+                    to_email=order.user.email,
+                    subject="Siparişiniz Yola Çıktı! 🚚",
+                    context={
+                        'full_name': order.full_name,
+                        'order_id': order.id,
+                        'tracking_number': tracking_number or 'Belirtilmedi',
+                    },
+                    template_type='order_shipped'
+                )
         
         if tracking_number is not None:
             order.tracking_number = tracking_number
@@ -508,3 +521,35 @@ class CartViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(cart)
         return Response(serializer.data)
+# --- İLETİŞİM FORMU ---
+from .utils.email_helper import send_toff_email
+
+class ContactView(generics.GenericAPIView):
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        name = request.data.get('name')
+        email = request.data.get('email')
+        subject = request.data.get('subject')
+        message = request.data.get('message')
+        
+        if not all([name, email, subject, message]):
+            return Response({'error': 'Lütfen tüm alanları doldurunuz.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Admin'e E-posta Gönder
+        email_sent = send_toff_email(
+            to_email='thetoffdesign@gmail.com', # Admin Email
+            subject=f"TOFF İletişim: {subject} - {name}",
+            context={
+                'name': name,
+                'email': email,
+                'user_subject': subject,
+                'message': message
+            },
+            template_type='contact_form'
+        )
+        
+        if email_sent:
+            return Response({'success': True, 'message': 'Mesajınız iletildi.'})
+        else:
+            return Response({'error': 'Mesaj gönderilemedi. Lütfen daha sonra tekrar deneyiniz.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

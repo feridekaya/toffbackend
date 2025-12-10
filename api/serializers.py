@@ -83,6 +83,24 @@ class ChangePasswordSerializer(serializers.Serializer):
         
         return data
 
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    class Meta:
+        fields = ['email']
+
+class ResetPasswordSerializer(serializers.Serializer):
+    new_password = serializers.CharField(write_only=True, required=True)
+    confirm_password = serializers.CharField(write_only=True, required=True)
+    uidb64 = serializers.CharField(read_only=True)
+    token = serializers.CharField(read_only=True)
+
+    def validate(self, data):
+        if data['new_password'] != data['confirm_password']:
+            raise serializers.ValidationError("Şifreler eşleşmiyor.")
+        validate_password(data['new_password'])
+        return data
+
 
 # --- ÜRÜN VE KATEGORİLER İÇİN ---
 
