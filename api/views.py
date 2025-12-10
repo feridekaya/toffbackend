@@ -553,3 +553,70 @@ class ContactView(generics.GenericAPIView):
             return Response({'success': True, 'message': 'Mesajınız iletildi.'})
         else:
             return Response({'error': 'Mesaj gönderilemedi. Lütfen daha sonra tekrar deneyiniz.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# --- Şifre Sıfırlama (Forgot Password) Views ---
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from .serializers import ForgotPasswordSerializer, ResetPasswordSerializer
+
+# Frontend URL (Environment variable or hardcoded for now)
+# FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://tofffrontend-production.up.railway.app')
+FRONTEND_URL = 'https://tofffrontend-production.up.railway.app' 
+
+class ForgotPasswordView(generics.GenericAPIView):
+    serializer_class = ForgotPasswordSerializer
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            try:
+                user = User.objects.get(email=email)
+                
+                # Token ve UID oluştur
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
+                token = default_token_generator.make_token(user)
+                
+                # Link oluştur
+                reset_link = f"{FRONTEND_URL}/reset-password?uid={uid}&token={token}"
+                
+                # Email Gönder
+                send_toff_email(
+                    to_email=user.email,
+                    subject="Şifrenizi mi unuttunuz?",
+                    context={'reset_link': reset_link},
+                    template_type='password_reset'
+                )
+                
+            except User.DoesNotExist:
+                # Güvenlik için kullanıcı bulunamasa bile başarılı gibi davran
+                pass
+            
+            return Response({'success': 'Eğer kayıtlı bir hesabınız varsa, şifre sıfırlama bağlantısı e-posta adresinize gönderildi.'}, status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ResetPasswordConfirmView(generics.GenericAPIView):
+    serializer_class = ResetPasswordSerializer
+    permission_classes = [AllowAny]
+
+    def post(self, request, uidb64, token):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                uid = str(urlsafe_base64_decode(uidb64), 'utf-8')
+                user = User.objects.get(pk=uid)
+                
+                if default_token_generator.check_token(user, token):
+                    user.set_password(serializer.validated_data['new_password'])
+                    user.save()
+                    return Response({'success': 'Şifreniz başarıyla değiştirildi.'}, status=status.HTTP_200_OK)
+                else:
+                    return Response({'error': 'Geçersiz veya süresi dolmuş bağlantı.'}, status=status.HTTP_400_BAD_REQUEST)
+                    
+            except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+                return Response({'error': 'Geçersiz bağlantı.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
