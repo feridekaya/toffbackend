@@ -38,7 +38,8 @@ class RegisterSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ['phone_number', 'birth_date', 'gender']
+        fields = ['phone_number', 'birth_date', 'gender', 'avatar', 'updated_at']
+        read_only_fields = ['updated_at']
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -126,7 +127,12 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'slug', 'description', 'price', 'image', 'category', 'collection', 'created_at', 'images', 'sizes', 'colors']
+        fields = [
+            'id', 'name', 'slug', 'description', 'price', 'discount_price',
+            'image', 'category', 'collection', 'stock', 'is_active',
+            'material', 'dimensions', 'weight',
+            'created_at', 'images', 'sizes', 'colors'
+        ]
 
 class CategorySerializer(serializers.ModelSerializer):
     header_slug = serializers.SerializerMethodField()
@@ -187,6 +193,7 @@ class AddressSerializer(serializers.ModelSerializer):
 # --- KUPONLAR İÇİN ---
 
 class CouponSerializer(serializers.ModelSerializer):
+    class Meta:
         model = Coupon
         fields = '__all__'
 
@@ -235,12 +242,14 @@ class OrderItemSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
     user_email = serializers.ReadOnlyField(source='user.email')
+    coupon_code = serializers.ReadOnlyField(source='coupon.code')
 
     class Meta:
         model = Order
         fields = [
-            'id', 'user', 'user_email', 'full_name', 'address', 'city', 'phone', 
-            'total_amount', 'status', 'created_at', 'items', 
+            'id', 'user', 'user_email', 'full_name', 'address', 'city', 'zip_code', 'phone',
+            'total_amount', 'coupon', 'coupon_code', 'discount_amount',
+            'status', 'created_at', 'items',
             'customer_note', 'tracking_number'
         ]
-        read_only_fields = ['id', 'user', 'created_at', 'total_amount', 'items']
+        read_only_fields = ['id', 'user', 'created_at', 'total_amount', 'items', 'coupon_code']

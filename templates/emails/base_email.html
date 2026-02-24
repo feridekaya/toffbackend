@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toff Mobilya</title>
+    <style>
+        body {
+            background-color: #161616;
+            color: #EDEDED;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #1F1F1F;
+            border: 1px solid #333;
+        }
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+            border-bottom: 2px solid #C08B5C;
+            background-color: #161616;
+        }
+        .logo {
+            font-size: 32px;
+            font-weight: bold;
+            color: #C08B5C; /* Copper */
+            text-decoration: none;
+            letter-spacing: 2px;
+        }
+        .content {
+            padding: 40px 30px;
+            line-height: 1.6;
+            color: #E0E0E0;
+        }
+        .btn-container {
+            text-align: center;
+            margin: 40px 0;
+        }
+        .btn {
+            background-color: #C08B5C;
+            color: #000000;
+            padding: 15px 30px;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 4px;
+            display: inline-block;
+            transition: opacity 0.3s;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+        .footer {
+            background-color: #161616;
+            padding: 30px 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #333;
+        }
+        .footer a {
+            color: #C08B5C;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        h1, h2, h3 {
+            color: #C08B5C;
+        }
+        .highlight {
+            color: #C08B5C;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="https://toff.com.tr" class="logo">TOFF</a>
+        </div>
+        
+        <div class="content">
+            {% block content %}
+            <!-- Email content goes here -->
+            {% endblock %}
+        </div>
+
+        <div class="footer">
+            <p>&copy; 2025 Toff Mobilya. Tüm hakları saklıdır.</p>
+            <p>
+                <a href="#">Instagram</a> | <a href="#">Web Sitesi</a> | <a href="#">İletişim</a>
+            </p>
+            <p>Bu e-posta siparişiniz hakkında bilgilendirme amacıyla gönderilmiştir.</p>
+        </div>
+    </div>
+</body>
+</html>

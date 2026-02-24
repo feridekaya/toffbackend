@@ -45,11 +45,13 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',  # JWT logout / token iptal
     'api',
     'corsheaders',
 ]
 
 MIDDLEWARE = [
+    'api.middleware.GlobalErrorHandlerMiddleware',  # Global hata yakalayıcı (EN BAŞA)
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -59,6 +61,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'api.middleware.RequestLoggingMiddleware',
+    'api.middleware.JWTAuthCheckMiddleware',
 ]
 
 ROOT_URLCONF = 'backend.urls'
@@ -156,7 +160,83 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.AllowAny',
+    ),
+    'EXCEPTION_HANDLER': 'api.middleware.custom_exception_handler',
+}
+
+# ---------------------------------------------------------------------------
+# BCRYPT Şifre Hashleyici
+# ---------------------------------------------------------------------------
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',  # Birincil: bcrypt
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',        # Eski şifreleri okumak için
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+]
+
+# ---------------------------------------------------------------------------
+# JWT Ayarları (djangorestframework-simplejwt)
+# ---------------------------------------------------------------------------
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    # Token süreleri
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+
+    # Güvenlik
+    'ROTATE_REFRESH_TOKENS': True,        # Her refresh'te yeni refresh token üretilir
+    'BLACKLIST_AFTER_ROTATION': True,     # Eski refresh token blacklist'e eklenir
+    'UPDATE_LAST_LOGIN': True,            # Giriş anında last_login güncellenir
+
+    # Algorithm
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+
+    # Header
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+
+    # Özel serializer (custom claims için)
+    'TOKEN_OBTAIN_SERIALIZER': 'api.token_serializers.CustomTokenObtainPairSerializer',
+}
+
+# ---------------------------------------------------------------------------
+# Loglama
+# ---------------------------------------------------------------------------
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{asctime}] {levelname} {name}: {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'api.requests': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'api.errors': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'django': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+        },
+    },
 }
 # Railway gibi proxy arkasında çalışırken HTTPS olduğunu anlaması için:
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

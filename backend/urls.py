@@ -1,34 +1,37 @@
 # backend/backend/urls.py
 from django.contrib import admin
 from django.urls import path, include
-
-# Medya dosyalarını (resimler) sunmak için importlar
 from django.conf import settings
-from django.conf.urls.static import static
 
-# Jeton (Token) sisteminin 'Giriş Yap' ve 'Yenile' görünümleri
+# Özel JWT view (custom claims: email, is_staff vs.)
+from api.token_serializers import CustomTokenObtainPairView
+
+# Standart simplejwt view'ları
 from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
     TokenRefreshView,
+    TokenVerifyView,
 )
+
+# Logout (blacklist) view
+from rest_framework_simplejwt.views import TokenBlacklistView
+
 from .views import root_view
 
 urlpatterns = [
-    # 0. Root Path
+    # 0. Root
     path('', root_view, name='root'),
 
-    # 1. Admin Paneli
+    # 1. Admin
     path('admin/', admin.site.urls),
-    
-    # 2. /api/token/ (Giriş Yapma)
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    
-    # 3. /api/token/refresh/ (Jeton Yenileme)
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
-    # 4. /api/ ile başlayan diğer tüm istekleri api.urls'e yönlendir
-    # (Bu, 'register' ve 'products' adreslerini kapsar)
-    path('api/', include('api.urls')), 
+    # 2. JWT Auth Endpoint'leri
+    path('api/token/',         CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),  # POST: login
+    path('api/token/refresh/', TokenRefreshView.as_view(),          name='token_refresh'),       # POST: refresh
+    path('api/token/verify/',  TokenVerifyView.as_view(),           name='token_verify'),        # POST: doğrula
+    path('api/auth/logout/',   TokenBlacklistView.as_view(),        name='token_blacklist'),     # POST: logout
+
+    # 3. API
+    path('api/', include('api.urls')),
 ]
 
 # Sadece DEBUG modundayken medya dosyalarını (resimleri) sun

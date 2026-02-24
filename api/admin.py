@@ -15,9 +15,11 @@ class ProductColorInline(admin.TabularInline):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'category', 'collection', 'price', 'stock', 'slug', 'created_at')
-    list_filter = ('category', 'collection')
+    list_display = ('name', 'category', 'collection', 'price', 'discount_price', 'stock', 'is_active', 'slug', 'created_at')
+    list_filter = ('category', 'collection', 'is_active')
+    list_editable = ('is_active',)
     prepopulated_fields = {'slug': ('name',)}
+    search_fields = ('name', 'material')
     inlines = [ProductImageInline, ProductSizeInline, ProductColorInline]
 
 @admin.register(Category)
@@ -58,7 +60,7 @@ class OrderItemInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'full_name', 'city', 'total_amount', 'status', 'created_at')
+    list_display = ('id', 'full_name', 'city', 'total_amount', 'discount_amount', 'coupon', 'status', 'created_at')
     list_filter = ('status', 'created_at')
     search_fields = ('full_name', 'phone', 'payment_id')
     readonly_fields = ('payment_id', 'created_at', 'updated_at')

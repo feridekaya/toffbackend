@@ -1,0 +1,22 @@
+{% extends 'emails/base_email.html' %}
+
+{% block content %}
+<h1 style="text-align: center;">Masanız Şekilleniyor</h1>
+<p style="text-align: center; font-size: 18px;">Şu an atölyede metal işçiliği aşamasındayız.</p>
+
+<div style="text-align: center; margin: 30px 0;">
+    <img src="https://cdn-icons-png.flaticon.com/512/2682/2682449.png" alt="Metal İşçiliği" width="80"
+        style="opacity: 0.8; filter: invert(1);">
+</div>
+
+<p>Sayın <strong>{{ full_name }}</strong>,</p>
+
+<p>Siparişiniz (<strong>#TOFF-{{ order_id }}</strong>) için üretim süreci başladı. Metal iskelet, ustalarımızın çekiç
+    darbeleriyle formunu buluyor.</p>
+
+<p>Kalite ve dayanıklılık bizim için her şeyden önce gelir. Bu nedenle her detayı titizlikle işliyoruz.</p>
+
+<div class="btn-container">
+    <a href="{{ order_url }}" class="btn">Üretim Durumunu Gör</a>
+</div>
+{% endblock %}

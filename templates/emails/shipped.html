@@ -1,0 +1,21 @@
+{% extends 'emails/base_email.html' %}
+
+{% block content %}
+<h1 style="text-align: center;">Toff Yola Çıktı 🚚</h1>
+<p style="text-align: center; font-size: 18px;">Ürünleriniz kargoya teslim edildi.</p>
+
+<p>Sayın <strong>{{ full_name }}</strong>,</p>
+
+<p>Büyük bir özenle hazırladığımız ürünleriniz artık yolda! En kısa sürede yaşam alanınızdaki yerini alacak.</p>
+
+<div style="background-color: #242424; padding: 20px; border-radius: 4px; margin: 20px 0; text-align: center;">
+    <p style="font-size: 14px; color: #AAA; margin-bottom: 5px;">Kargo Takip Numaranız</p>
+    <p style="font-size: 24px; color: #C08B5C; font-weight: bold; margin: 0;">{{ tracking_number }}</p>
+</div>
+
+<p>Teslimat sırasında paketi kontrol etmeyi unutmayınız.</p>
+
+<div class="btn-container">
+    <a href="{{ order_url }}" class="btn">Kargom Nerede?</a>
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends 'emails/base_email.html' %}
+
+{% block content %}
+<h1 style="text-align: center;">Siparişiniz Alındı</h1>
+<p style="text-align: center; font-size: 18px;">Usta eller işe koyuluyor.</p>
+
+<p>Sayın <strong>{{ full_name }}</strong>,</p>
+
+<p>Özenle seçtiğiniz ürünler için siparişiniz başarıyla oluşturuldu. Mobilyalarınız, deneyimli ustalarımız tarafından
+    size özel olarak hazırlanacak.</p>
+
+<div style="background-color: #242424; padding: 20px; border-radius: 4px; margin: 20px 0;">
+    <p style="margin: 5px 0;"><strong>Sipariş No:</strong> #TOFF-{{ order_id }}</p>
+    <p style="margin: 5px 0;"><strong>Tarih:</strong> {{ created_at }}</p>
+    <p style="margin: 5px 0;"><strong>Tutar:</strong> {{ total_amount }} ₺</p>
+</div>
+
+<p>Üretim süreci boyunca sizi her aşamada bilgilendireceğiz.</p>
+
+<div class="btn-container">
+    <a href="{{ order_url }}" class="btn">Siparişi Görüntüle</a>
+</div>
+{% endblock %}

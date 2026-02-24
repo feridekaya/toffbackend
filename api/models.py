@@ -40,10 +40,15 @@ class Product(models.Model):
     slug = models.SlugField(max_length=200, unique=True, null=True, blank=True)
     description = models.TextField(blank=True, null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
+    discount_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="İndirimli fiyat (boş bırakılırsa indirim uygulanmaz)")
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name='products')
     collection = models.ForeignKey(Collection, on_delete=models.SET_NULL, null=True, blank=True, related_name='products', help_text="Bu ürünün ait olduğu koleksiyon")
     image = models.ImageField(upload_to='products/', null=True, blank=True)
     stock = models.IntegerField(default=10, help_text="Stok adedi")
+    is_active = models.BooleanField(default=True, help_text="Ürün aktif mi? (Pasif ürünler sitede görünmez)")
+    material = models.CharField(max_length=200, blank=True, null=True, help_text="Malzeme bilgisi (örn: Meşe, Çelik)")
+    dimensions = models.CharField(max_length=200, blank=True, null=True, help_text="Boyutlar (örn: 120x60x75 cm)")
+    weight = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True, help_text="Ağırlık (kg)")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -93,6 +98,8 @@ class Profile(models.Model):
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     birth_date = models.DateField(null=True, blank=True)
     gender = models.CharField(max_length=10, blank=True, null=True, choices=GENDER_CHOICES)
+    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True, help_text="Profil fotoğrafı")
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
@@ -163,8 +170,11 @@ class Order(models.Model):
     full_name = models.CharField(max_length=100)
     address = models.TextField()
     city = models.CharField(max_length=50)
+    zip_code = models.CharField(max_length=10, blank=True, null=True, help_text="Posta kodu")
     phone = models.CharField(max_length=15)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    coupon = models.ForeignKey(Coupon, on_delete=models.SET_NULL, null=True, blank=True, related_name='orders', help_text="Kullanılan kupon")
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Kupon/indirim tutarı")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending_payment')
     payment_id = models.CharField(max_length=100, blank=True, null=True, help_text="Iyzico ödeme ID")
     customer_note = models.TextField(blank=True, null=True, help_text="Müşteri notu / Özel ölçüler")
@@ -186,9 +196,6 @@ class OrderItem(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     selected_size = models.CharField(max_length=50, blank=True, null=True, help_text="Satın alınan boyut (Snapshot)")
     selected_color = models.CharField(max_length=50, blank=True, null=True, help_text="Satın alınan renk (Snapshot)")
-
-    def __str__(self):
-        return f"{self.product_name} x {self.quantity}"
 
     def __str__(self):
         return f"{self.product_name} x {self.quantity}"
