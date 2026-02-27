@@ -786,13 +786,17 @@ class ForgotPasswordView(generics.GenericAPIView):
                     context={'reset_link': reset_link},
                     template_type='password_reset'
                 )
+                
+                return Response(
+                    {'success': 'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.'},
+                    status=status.HTTP_200_OK
+                )
             except User.DoesNotExist:
-                pass  # Güvenlik: kullanıcı yoksa da başarılı göster
-
-            return Response(
-                {'success': 'Eğer kayıtlı bir hesabınız varsa, şifre sıfırlama bağlantısı e-posta adresinize gönderildi.'},
-                status=status.HTTP_200_OK
-            )
+                # Kullanıcı yoksa hata ver
+                return Response(
+                    {'error': 'Bu e-posta adresiyle kayıtlı bir hesap bulunamadı.'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
