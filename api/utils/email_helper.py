@@ -179,16 +179,53 @@ def send_toff_email(to_email, subject, context, template_type):
 
     # Send Email
     try:
-        send_mail(
-            subject=subject,
-            message=strip_tags(html_content), # Plain text fallback
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[to_email],
-            html_message=html_content,
-            fail_silently=False,
-        )
-        return True
+        from django.conf import settings
+        brevo_api_key = getattr(settings, 'BREVO_API_KEY', '')
+
+        if brevo_api_key:
+            # ── Brevo (HTTPS API) Üzerinden Gönderim ──
+            # Railway giden port 465 ve 587'yi kapattığı için HTTPS (port 443) üzerinden atıyoruz
+            import json
+            import urllib.request
+            import urllib.error
+            url = "https://api.brevo.com/v3/smtp/email"
+            data = {
+                "sender": {
+                    "name": "TOFF Design",
+                    "email": settings.DEFAULT_FROM_EMAIL
+                },
+                "to": [{"email": to_email}],
+                "subject": subject,
+                "htmlContent": html_content
+            }
+            req = urllib.request.Request(url, data=json.dumps(data).encode('utf-8'))
+            req.add_header('api-key', brevo_api_key)
+            req.add_header('Content-Type', 'application/json')
+            req.add_header('Accept', 'application/json')
+            
+            try:
+                response = urllib.request.urlopen(req, timeout=10)
+                if response.status not in (200, 201, 202):
+                    raise Exception(f"Brevo API error: {response.status}")
+                return True
+            except urllib.error.HTTPError as e:
+                # E-posta hatasının JSON detaylarını yakala
+                error_body = e.read().decode('utf-8')
+                raise Exception(f"Brevo HTTP Hatası ({e.code}): {error_body}")
+        
+        else:
+            # ── Standart SMTP Üzerinden Gönderim (Eski Yöntem) ──
+            send_mail(
+                subject=subject,
+                message=strip_tags(html_content), # Plain text fallback
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[to_email],
+                html_message=html_content,
+                fail_silently=False,
+            )
+            return True
+            
     except Exception as e:
         print(f"Email sending failed: {e}")
-        # Hatayı ana view'lara fırlat ki ekranda hatanın ne olduğunu (Örn: şifre yanlış) bilelim
+        # Hatayı ana view'lara fırlat ki ekranda hatanın ne olduğunu (Örn: API şifresi yanlış) bilelim
         raise e
