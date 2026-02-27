@@ -180,7 +180,10 @@ def send_toff_email(to_email, subject, context, template_type):
     # Send Email
     try:
         from django.conf import settings
-        brevo_api_key = getattr(settings, 'BREVO_API_KEY', '')
+        import os
+        
+        # settings.py'de tanımlı değilse doğrudan işletim sistemi ortamından al
+        brevo_api_key = getattr(settings, 'BREVO_API_KEY', os.environ.get('BREVO_API_KEY', ''))
 
         if brevo_api_key:
             # ── Brevo (HTTPS API) Üzerinden Gönderim ──
