@@ -162,13 +162,20 @@ else:
     # Ortam değişkeni yoksa yerel dosya sistemi (geliştirme)
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS Ayarları
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    'https://tofffrontend-production.up.railway.app',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+]
 
 # CSRF Güvenlik Ayarları
 CSRF_TRUSTED_ORIGINS = [
     'https://web-production-4a117.up.railway.app',
     'https://tofffrontend-production.up.railway.app',
     'http://localhost:3000',
+    'http://127.0.0.1:3000',
 ]
 
 # MEDYA (YÜKLENEN DOSYALAR) AYARLARI
