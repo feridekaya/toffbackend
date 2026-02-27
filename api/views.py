@@ -800,12 +800,25 @@ class ForgotPasswordView(generics.GenericAPIView):
                 uid = urlsafe_base64_encode(force_bytes(user.pk))
                 token = default_token_generator.make_token(user)
                 reset_link = f"{FRONTEND_URL}/reset-password?uid={uid}&token={token}"
-                send_toff_email(
-                    to_email=user.email,
-                    subject="Şifrenizi mi unuttunuz?",
-                    context={'reset_link': reset_link},
-                    template_type='password_reset'
-                )
+                
+                email_err_msg = None
+                try:
+                    success = send_toff_email(
+                        to_email=user.email,
+                        subject="Şifrenizi mi unuttunuz?",
+                        context={'reset_link': reset_link},
+                        template_type='password_reset'
+                    )
+                    if not success:
+                        email_err_msg = "send_toff_email False döndürdü."
+                except Exception as e:
+                    email_err_msg = str(e)
+
+                if email_err_msg:
+                    return Response(
+                        {'error': f'E-posta gönderilirken hata oluştu: {email_err_msg}'},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    )
                 
                 return Response(
                     {'success': 'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.'},
