@@ -179,6 +179,25 @@ class UserCreateView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
 
+    def perform_create(self, serializer):
+        user = serializer.save()
+        
+        # ── Hoş Geldin Emaili (Kayıt Sonrası) ─────────────────────────
+        try:
+            from .utils.email_helper import send_toff_email
+            send_toff_email(
+                to_email=user.email,
+                subject="TOFF Ailesine Hoş Geldiniz! 🌟",
+                context={
+                    'username': user.username,
+                    'email':    user.email,
+                },
+                template_type='welcome',
+            )
+        except Exception as e:
+            print(f"Hoşgeldin email hatası: {e}")
+
+
 
 class UserProfileView(generics.RetrieveUpdateDestroyAPIView):
     """
@@ -549,6 +568,40 @@ def create_order(request):
             if coupon:
                 coupon.used_count += 1
                 coupon.save()
+
+            # ── Sipariş Onayı Emaili ──────────────────────────────
+            try:
+                from .utils.email_helper import send_toff_email
+                recipient_email = (
+                    request.user.email
+                    if request.user.is_authenticated
+                    else None
+                )
+                if recipient_email:
+                    email_items = [
+                        {
+                            'name':     oi.product_name,
+                            'quantity': oi.quantity,
+                            'price':    float(oi.price),
+                            'size':     oi.selected_size  or '',
+                            'color':    oi.selected_color or '',
+                        }
+                        for oi in order.items.all()
+                    ]
+                    send_toff_email(
+                        to_email=recipient_email,
+                        subject=f"Siparişiniz Alındı #{order.id} — TOFF Design",
+                        context={
+                            'full_name':       order.full_name,
+                            'order_id':        order.id,
+                            'items':           email_items,
+                            'discount_amount': round(discount_amount, 2),
+                            'total_amount':    round(total_amount, 2),
+                        },
+                        template_type='order_confirmed',
+                    )
+            except Exception as email_err:
+                print(f"Sipariş email hatası: {email_err}")  # Loglama — siparişi durdurma
 
             return Response({
                 'success': True,

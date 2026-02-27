@@ -9,8 +9,9 @@ def send_toff_email(to_email, subject, context, template_type):
     Args:
         to_email (str): Recipient email address.
         subject (str): Email subject.
-        context (dict): Dynamic data for the template (e.g., name, detailed_message, tracking_code).
-        template_type (str): 'contact_response', 'password_reset', 'order_shipped'
+        context (dict): Dynamic data for the template.
+        template_type (str): 'contact_form', 'password_reset', 'order_shipped',
+                             'order_confirmed', 'welcome'
     """
     
     # --- TEMPLATES ---
@@ -95,6 +96,84 @@ def send_toff_email(to_email, subject, context, template_type):
         """
         html_content = get_html_wrapper(body)
         
+    # 4. Sipariş Onayı (Kullanıcıya)
+    elif template_type == 'order_confirmed':
+        # Context: full_name, order_id, total_amount, items (list of dicts)
+        items = context.get('items', [])
+        items_html = ''.join([
+            f"""
+            <tr>
+                <td style="padding: 8px 12px; color: #EDEDED; border-bottom: 1px solid #2a2a2a;">
+                    {item.get('name')} × {item.get('quantity')}
+                    {'<br><small style="color:#9CA3AF">' + item.get('size','') + ' / ' + item.get('color','') + '</small>' if item.get('size') or item.get('color') else ''}
+                </td>
+                <td style="padding: 8px 12px; color: #C08B5C; text-align: right; border-bottom: 1px solid #2a2a2a;">
+                    {float(item.get('price', 0)) * int(item.get('quantity', 1)):,.2f} ₺
+                </td>
+            </tr>
+            """
+            for item in items
+        ])
+        discount_html = ''
+        if context.get('discount_amount') and float(context.get('discount_amount', 0)) > 0:
+            discount_html = f"""
+            <tr>
+                <td style="padding: 8px 12px; color: #9CA3AF;">Kupon İndirimi</td>
+                <td style="padding: 8px 12px; color: #4ade80; text-align: right;">- {float(context.get('discount_amount', 0)):,.2f} ₺</td>
+            </tr>
+            """
+        body = f"""
+        <h2 style="color: #EDEDED; margin-top: 0;">Siparişiniz Alındı! 🎉</h2>
+        <p>Merhaba <span class="accent">{context.get('full_name')}</span>,</p>
+        <p>#{context.get('order_id')} numaralı siparişiniz başarıyla oluşturuldu. Üretime başladığımızda sizi bilgilendireceğiz.</p>
+        
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background-color: #1F1F1F; border-radius: 4px;">
+            <thead>
+                <tr style="background-color: #1a0f05;">
+                    <th style="padding: 10px 12px; text-align: left; color: #C08B5C; font-size: 13px;">Ürün</th>
+                    <th style="padding: 10px 12px; text-align: right; color: #C08B5C; font-size: 13px;">Toplam</th>
+                </tr>
+            </thead>
+            <tbody>
+                {items_html}
+                {discount_html}
+                <tr style="border-top: 2px solid #333;">
+                    <td style="padding: 12px; font-weight: bold; color: #EDEDED;">Genel Toplam</td>
+                    <td style="padding: 12px; font-weight: bold; color: #C08B5C; text-align: right;">{float(context.get('total_amount', 0)):,.2f} ₺</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div style="text-align: center;">
+            <a href="https://tofffrontend-production.up.railway.app/hesabim/siparisler/{context.get('order_id')}" class="button">Siparişimi Görüntüle</a>
+        </div>
+        <p style="margin-top: 20px; color: #9CA3AF; font-size: 14px;">Herhangi bir sorunuz için <a href="mailto:thetoffdesign@gmail.com" style="color: #C08B5C;">thetoffdesign@gmail.com</a> adresinden bize ulaşabilirsiniz.</p>
+        """
+        html_content = get_html_wrapper(body)
+
+    # 5. Hoş Geldin / Kayıt Doğrulama (Kullanıcıya)
+    elif template_type == 'welcome':
+        # Context: username, email
+        body = f"""
+        <h2 style="color: #EDEDED; margin-top: 0;">TOFF Ailesine Hoş Geldiniz! 🌟</h2>
+        <p>Merhaba <span class="accent">{context.get('username')}</span>,</p>
+        <p>Hesabınız başarıyla oluşturuldu. Artık el işçiliğiyle üretilen özel tasarım mobilyalarımıza göz atabilirsiniz.</p>
+        
+        <div style="background-color: #1F1F1F; padding: 20px; border-radius: 6px; border-left: 3px solid #C08B5C; margin: 20px 0;">
+            <p style="margin: 0 0 8px 0; color: #9CA3AF; font-size: 13px;">Kayıtlı E-posta</p>
+            <p style="margin: 0; font-weight: bold; color: #EDEDED;">{context.get('email')}</p>
+        </div>
+        
+        <div style="text-align: center;">
+            <a href="https://tofffrontend-production.up.railway.app/tum-urunler" class="button">Koleksiyonu Keşfedin</a>
+        </div>
+        <p style="margin-top: 20px; color: #9CA3AF; font-size: 13px;">
+            Siparişlerinizi takip etmek, adres kaydetmek ve faturalarınızı görüntülemek için 
+            <a href="https://tofffrontend-production.up.railway.app/hesabim" style="color: #C08B5C;">hesabım</a> sayfanızı kullanabilirsiniz.
+        </p>
+        """
+        html_content = get_html_wrapper(body)
+
     else:
         raise ValueError("Invalid template type provided")
 
