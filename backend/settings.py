@@ -53,11 +53,11 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'api.middleware.GlobalErrorHandlerMiddleware',  # Global hata yakalayıcı (EN BAŞA)
+    'corsheaders.middleware.CorsMiddleware',        # EN BAŞA: Tüm yanıtlara (500 dahil) CORS ekle
+    'api.middleware.GlobalErrorHandlerMiddleware',  # Global hata yakalayıcı
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -277,6 +277,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
+EMAIL_TIMEOUT = 10  # En fazla 10 saniye bekle, sonra hataya (timeout) düş (Böylece Railway bağlantısı koparmaz)
 EMAIL_HOST_USER = os.environ.get('EMAIL_USER', 'thetoffdesign@gmail.com')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_PASS', '') # Uygulama Şifresi (App Password)
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
