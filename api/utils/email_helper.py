@@ -190,4 +190,5 @@ def send_toff_email(to_email, subject, context, template_type):
         return True
     except Exception as e:
         print(f"Email sending failed: {e}")
-        return False
+        # Hatayı ana view'lara fırlat ki ekranda hatanın ne olduğunu (Örn: şifre yanlış) bilelim
+        raise e
