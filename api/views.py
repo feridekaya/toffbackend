@@ -181,11 +181,18 @@ class UserCreateView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         user = serializer.save()
+        return user
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = self.perform_create(serializer)
         
         # ── Hoş Geldin Emaili (Kayıt Sonrası) ─────────────────────────
+        email_error = None
         try:
             from .utils.email_helper import send_toff_email
-            send_toff_email(
+            success = send_toff_email(
                 to_email=user.email,
                 subject="TOFF Ailesine Hoş Geldiniz! 🌟",
                 context={
@@ -194,8 +201,21 @@ class UserCreateView(generics.CreateAPIView):
                 },
                 template_type='welcome',
             )
+            if not success:
+                email_error = "Bilinmeyen bir email gönderim hatası (send_toff_email False döndü)."
         except Exception as e:
+            email_error = str(e)
             print(f"Hoşgeldin email hatası: {e}")
+
+        # Orijinal Response objesi
+        headers = self.get_success_headers(serializer.data)
+        response_data = serializer.data
+
+        if email_error:
+            # Sadece hatanın ne olduğunu görebilmek için (Normalde production'da gösterilmez)
+            response_data['email_error'] = f"Kayıt başarılı ancak hoşgeldin emaili gönderilemedi: {email_error}"
+
+        return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
 
 
 
