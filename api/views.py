@@ -6,6 +6,9 @@ from rest_framework.decorators import action, api_view, permission_classes
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.db import transaction
+from django.db.models import Sum, Count
+from django.db.models.functions import TruncMonth
+from datetime import timedelta
 
 from .models import Product, Category, Collection, Favorite, Address, Coupon, Order, OrderItem
 from .serializers import (
@@ -862,3 +865,176 @@ class ResetPasswordConfirmView(generics.GenericAPIView):
                 return Response({'error': 'Geçersiz bağlantı.'}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ---------------------------------------------------------------------------
+# ADMIN ANALYTICS
+# GET /api/admin/analytics/ → Admin only
+# ---------------------------------------------------------------------------
+
+class AdminAnalyticsView(generics.GenericAPIView):
+    """
+    GET /api/admin/analytics/
+    Satış, kullanıcı ve stok analiz verilerini döndürür.
+    """
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        now = timezone.now()
+        six_months_ago = now - timedelta(days=180)
+
+        # ── 1. KPI Özet Kartları ──────────────────────────────────────────
+        total_orders = Order.objects.count()
+        total_revenue = Order.objects.exclude(
+            status='cancelled'
+        ).aggregate(total=Sum('total_amount'))['total'] or 0
+
+        total_users = User.objects.count()
+        active_products = Product.objects.filter(is_active=True).count()
+
+        # ── 2. Aylık Satış Geliri (son 6 ay) ─────────────────────────────
+        monthly_sales = (
+            Order.objects
+            .filter(created_at__gte=six_months_ago)
+            .exclude(status='cancelled')
+            .annotate(month=TruncMonth('created_at'))
+            .values('month')
+            .annotate(revenue=Sum('total_amount'), order_count=Count('id'))
+            .order_by('month')
+        )
+        monthly_sales_data = [
+            {
+                'month': entry['month'].strftime('%b %Y'),
+                'revenue': float(entry['revenue'] or 0),
+                'orders': entry['order_count'],
+            }
+            for entry in monthly_sales
+        ]
+
+        # ── 3. Aylık Yeni Kullanıcı Kayıtları (son 6 ay) ─────────────────
+        monthly_users = (
+            User.objects
+            .filter(date_joined__gte=six_months_ago)
+            .annotate(month=TruncMonth('date_joined'))
+            .values('month')
+            .annotate(count=Count('id'))
+            .order_by('month')
+        )
+        monthly_users_data = [
+            {
+                'month': entry['month'].strftime('%b %Y'),
+                'users': entry['count'],
+            }
+            for entry in monthly_users
+        ]
+
+        # ── 4. Sipariş Durum Dağılımı ─────────────────────────────────────
+        status_distribution = (
+            Order.objects
+            .values('status')
+            .annotate(count=Count('id'))
+            .order_by('-count')
+        )
+        status_labels = {
+            'pending_payment': 'Ödeme Bekleniyor',
+            'order_confirmed': 'Sipariş Onaylandı',
+            'preparing': 'Üretime Hazırlanıyor',
+            'metalworks': 'Metal İşçiliği',
+            'woodworks': 'Ahşap İşçiliği',
+            'finishing': 'Boya & Vernik',
+            'quality_control': 'Kalite Kontrol',
+            'shipped': 'Kargoya Verildi',
+            'delivered': 'Teslim Edildi',
+            'cancelled': 'İptal/İade',
+        }
+        order_status_data = [
+            {
+                'name': status_labels.get(entry['status'], entry['status']),
+                'value': entry['count'],
+                'key': entry['status'],
+            }
+            for entry in status_distribution
+        ]
+
+        # ── 5. Düşük Stok Ürünleri (stok < 5) ───────────────────────────
+        low_stock_products = (
+            Product.objects
+            .filter(is_active=True, stock__lt=5)
+            .order_by('stock')
+            .values('id', 'name', 'stock', 'price')[:10]
+        )
+        low_stock_data = [
+            {
+                'id': p['id'],
+                'name': p['name'],
+                'stock': p['stock'],
+                'price': float(p['price']),
+            }
+            for p in low_stock_products
+        ]
+
+        # ── 6. En Çok Satan 5 Ürün ────────────────────────────────────────
+        top_products = (
+            OrderItem.objects
+            .values('product__id', 'product__name')
+            .annotate(
+                total_qty=Sum('quantity'),
+                total_revenue=Sum('price')
+            )
+            .order_by('-total_qty')[:5]
+        )
+        top_products_data = [
+            {
+                'id': p['product__id'],
+                'name': p['product__name'],
+                'quantity': p['total_qty'],
+                'revenue': float(p['total_revenue'] or 0),
+            }
+            for p in top_products
+        ]
+
+        # ── 7. Kategori Bazlı Satış Dağılımı ─────────────────────────────
+        category_sales = (
+            OrderItem.objects
+            .filter(product__category__isnull=False)
+            .values('product__category__name')
+            .annotate(total=Sum('quantity'))
+            .order_by('-total')[:8]
+        )
+        category_sales_data = [
+            {
+                'name': c['product__category__name'],
+                'value': c['total'],
+            }
+            for c in category_sales
+        ]
+
+        # ── 8. Ortalama Sipariş Değeri (son 30 gün vs önceki 30 gün) ─────
+        thirty_days_ago = now - timedelta(days=30)
+        sixty_days_ago = now - timedelta(days=60)
+
+        avg_current = Order.objects.filter(
+            created_at__gte=thirty_days_ago
+        ).exclude(status='cancelled').aggregate(avg=Sum('total_amount') / Count('id'))['avg'] or 0
+
+        avg_previous = Order.objects.filter(
+            created_at__gte=sixty_days_ago, created_at__lt=thirty_days_ago
+        ).exclude(status='cancelled').aggregate(avg=Sum('total_amount') / Count('id'))['avg'] or 0
+
+        return Response({
+            'summary': {
+                'total_orders': total_orders,
+                'total_revenue': float(total_revenue),
+                'total_users': total_users,
+                'active_products': active_products,
+                'avg_order_value': float(avg_current),
+                'avg_order_prev': float(avg_previous),
+            },
+            'monthly_sales': monthly_sales_data,
+            'monthly_users': monthly_users_data,
+            'order_status': order_status_data,
+            'low_stock': low_stock_data,
+            'top_products': top_products_data,
+            'category_sales': category_sales_data,
+        })
+
